@@ -102,12 +102,13 @@ function startPythonEngine() {
   const { exe, args } = getPythonExecutable();
 
   try {
-    pythonProcess = spawn(exe, args, {
+    const p = spawn(exe, args, {
       stdio: ['pipe', 'pipe', 'pipe']
     });
+    pythonProcess = p;
 
     let buffer = '';
-    pythonProcess.stdout.on('data', (data) => {
+    p.stdout.on('data', (data) => {
       buffer += data.toString();
       const lines = buffer.split('\n');
       buffer = lines.pop();
@@ -123,23 +124,35 @@ function startPythonEngine() {
       }
     });
 
-    pythonProcess.stderr.on('data', (data) => {
+    p.stderr.on('data', (data) => {
       const text = data.toString();
+      console.error('[PYTHON ERROR]:', text);
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('python-log', text);
       }
     });
 
-    pythonProcess.on('close', (code) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('engine-status', { running: false, code });
+    p.on('close', (code, signal) => {
+      if (pythonProcess === p) {
+        pythonProcess = null;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          const reason = code !== null ? code : (signal || 'unknown');
+          let msg = `Engine stopped (code ${reason})`;
+          if (reason === 'SIGABRT' || reason === 'SIGTRAP') {
+            msg += ' - Usually caused by missing Microphone permissions in macOS. Please check System Settings > Privacy & Security > Microphone.';
+          }
+          mainWindow.webContents.send('engine-error', { message: msg });
+          mainWindow.webContents.send('engine-status', { running: false, code: reason });
+        }
       }
-      pythonProcess = null;
     });
 
-    pythonProcess.on('error', (err) => {
+    p.on('error', (err) => {
+      if (pythonProcess === p) {
+        pythonProcess = null;
+      }
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('engine-error', { message: err.message });
+        mainWindow.webContents.send('engine-error', { message: 'Failed to start python engine: ' + err.message });
       }
     });
 
@@ -201,7 +214,6 @@ function sendToPython(command) {
 }
 
 function injectText(text) {
-  const prev = clipboard.readText();
   clipboard.writeText(text);
 
   const { exec } = require('child_process');
@@ -226,8 +238,6 @@ function injectText(text) {
       }
     }
   });
-
-  setTimeout(() => clipboard.writeText(prev), 500);
 }
 
 function registerShortcuts() {

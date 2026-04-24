@@ -197,12 +197,15 @@ class VoiceTypeApp {
     });
 
     window.voiceAPI.onEngineStatus((data) => {
-      if (data.running) {
+      if (data.running === true) {
         this.engineRunning = true;
         this._updateEngineStatus('ok', 'Voice engine ready');
-      } else {
+      } else if (data.running === false) {
         this.engineRunning = false;
         this._updateEngineStatus('error', `Engine stopped (code ${data.code ?? '?'})`);
+      } else if (data.message) {
+        // It's a status message from the Python engine
+        this._updateEngineStatus('ok', data.message);
       }
     });
 
