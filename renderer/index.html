@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-font-size="medium">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>VoiceType Pro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" role="main" aria-label="VoiceType Pro application">
+
+  <!-- ─── Custom Title Bar ────────────────────────────────────── -->
+  <div id="title-bar" role="toolbar" aria-label="Window controls">
+    <div class="title-bar-left">
+      <!-- macOS traffic lights -->
+      <div class="macos-controls" id="mac-controls" style="display:none;">
+        <button class="mac-btn close" id="btn-mac-close" aria-label="Close window" title="Close"></button>
+        <button class="mac-btn min" id="btn-mac-min" aria-label="Minimize window" title="Minimize"></button>
+        <button class="mac-btn max" id="btn-mac-max" aria-label="Maximize window" title="Maximize"></button>
+      </div>
+      <svg class="title-bar-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--accent);">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="8" y1="22" x2="16" y2="22"/>
+      </svg>
+      <span class="title-bar-name">VoiceType Pro</span>
+    </div>
+
+    <div class="title-bar-right">
+      <button class="win-btn" id="btn-collapse" aria-label="Collapse to mini mode" title="Collapse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+      </button>
+
+      <!-- Windows controls -->
+      <div class="title-bar-controls" id="win-controls" style="display:none;">
+        <button class="win-btn" id="btn-win-min" aria-label="Minimize">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><line x1="2" y1="7" x2="12" y2="7"/></svg>
+        </button>
+        <button class="win-btn" id="btn-win-max" aria-label="Maximize">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="1"/></svg>
+        </button>
+        <button class="win-btn close" id="btn-win-close" aria-label="Close">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Status Pill ──────────────────────────────────────────── -->
+  <div id="status-pill" role="status" aria-live="polite" aria-atomic="true">
+    <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+    <span id="status-lang">English</span>
+    <span id="status-state" class="status-state">Idle</span>
+  </div>
+
+  <!-- ─── Mic Section ──────────────────────────────────────────── -->
+  <section id="mic-section" aria-label="Microphone control">
+    <div id="mic-container">
+      <div class="mic-ring mic-ring-1" aria-hidden="true"></div>
+      <div class="mic-ring mic-ring-2" aria-hidden="true"></div>
+      <button id="mic-btn" aria-label="Start voice recognition" aria-pressed="false">
+        <svg id="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+        <svg id="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;">
+          <rect x="6" y="4" width="4" height="16"/>
+          <rect x="14" y="4" width="4" height="16"/>
+        </svg>
+      </button>
+    </div>
+    <span id="mic-label" aria-live="polite">Tap to speak</span>
+  </section>
+
+  <!-- ─── Waveform ─────────────────────────────────────────────── -->
+  <section id="waveform-section" aria-label="Audio waveform visualization">
+    <canvas id="waveform-canvas" role="img" aria-label="Real-time audio waveform"></canvas>
+  </section>
+
+  <!-- ─── Transcript Preview ───────────────────────────────────── -->
+  <section id="transcript-section" aria-label="Transcription output">
+    <div id="transcript-box" tabindex="0" role="log" aria-live="polite" aria-atomic="false" aria-label="Transcribed text">
+      <div id="transcript-placeholder" aria-hidden="true">
+        Your voice transcription will appear here.<br>
+        Say <strong>"pause"</strong>, <strong>"stop"</strong>, or <strong>"clear"</strong> to control the app.
+      </div>
+    </div>
+    <div class="transcript-actions">
+      <button class="transcript-btn" id="copy-btn" aria-label="Copy transcript to clipboard">Copy</button>
+      <button class="transcript-btn" id="clear-btn" aria-label="Clear transcript">Clear</button>
+    </div>
+  </section>
+
+  <!-- ─── Bottom Bar ─────────────────────────────────────────────── -->
+  <nav id="bottom-bar" aria-label="Controls">
+    <select id="lang-select" aria-label="Select language">
+      <!-- Options populated by JS -->
+    </select>
+    <button id="hold-btn" aria-label="Hold to pause voice recognition">Hold</button>
+    <button id="settings-btn" aria-label="Open settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- ─── Engine Status Bar ─────────────────────────────────────── -->
+  <div id="engine-status-bar" aria-live="polite" aria-atomic="true">
+    <span class="engine-dot loading" id="engine-dot" aria-hidden="true"></span>
+    <span id="engine-status-text">Initializing...</span>
+  </div>
+
+  <!-- ─── Mini Mode Bar (Search Box Style) ──────────────────────── -->
+  <div id="mini-bar" role="button" aria-label="Expand to full mode">
+    <div class="mini-content">
+      <div class="mini-mic-section">
+        <svg class="mini-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+        <div class="mini-wave-container">
+          <div class="mini-wave"></div>
+          <div class="mini-wave"></div>
+          <div class="mini-wave"></div>
+        </div>
+      </div>
+      <div class="mini-text-section">
+        <span id="mini-transcript-placeholder">VoiceType Pro...</span>
+      </div>
+      <button id="btn-expand" class="mini-btn" aria-label="Expand to full mode" title="Expand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Settings Overlay ──────────────────────────────────────── -->
+  <div id="settings-overlay" role="dialog" aria-modal="true" aria-label="Settings" aria-hidden="true"></div>
+
+  <!-- ─── Settings Panel ────────────────────────────────────────── -->
+  <aside id="settings-panel" role="complementary" aria-label="Settings panel">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close-btn" id="settings-close-btn" aria-label="Close settings">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <nav class="settings-tabs" role="tablist" aria-label="Settings categories">
+      <button class="settings-tab active" data-tab="general" role="tab" aria-selected="true" aria-controls="section-general">General</button>
+      <button class="settings-tab" data-tab="appearance" role="tab" aria-selected="false" aria-controls="section-appearance">Appearance</button>
+      <button class="settings-tab" data-tab="shortcuts" role="tab" aria-selected="false" aria-controls="section-shortcuts">Shortcuts</button>
+      <button class="settings-tab" data-tab="language" role="tab" aria-selected="false" aria-controls="section-language">Language</button>
+      <button class="settings-tab" data-tab="permissions" role="tab" aria-selected="false" aria-controls="section-permissions">Permissions</button>
+      <button class="settings-tab" data-tab="about" role="tab" aria-selected="false" aria-controls="section-about">About</button>
+    </nav>
+
+    <div class="settings-content">
+
+      <!-- ── General ──────────────────────────────────────────── -->
+      <section class="settings-section active" id="section-general" role="tabpanel" aria-labelledby="tab-general">
+        <div class="settings-group">
+          <div class="settings-group-title">Behavior</div>
+
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Clipboard Monitor</div>
+              <div class="settings-row-desc">Capture copied text and make it editable via voice</div>
+            </div>
+            <label class="toggle" aria-label="Toggle clipboard monitor">
+              <input type="checkbox" id="toggle-clipboard">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Start with System</div>
+              <div class="settings-row-desc">Launch VoiceType Pro automatically at login</div>
+            </div>
+            <label class="toggle" aria-label="Toggle start with system">
+              <input type="checkbox" id="toggle-startup">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Always on Top</div>
+              <div class="settings-row-desc">Keep window above all other applications</div>
+            </div>
+            <label class="toggle" aria-label="Toggle always on top">
+              <input type="checkbox" id="toggle-always-top">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Microphone</div>
+          <div class="settings-card mic-settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Input Device</div>
+              <div class="settings-row-desc">Select which microphone to use</div>
+            </div>
+            <div class="select-wrapper">
+              <select class="settings-select" id="mic-device-select" aria-label="Select microphone device">
+                <option value="default">Default Microphone</option>
+              </select>
+              <div class="select-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Appearance ────────────────────────────────────────── -->
+      <section class="settings-section" id="section-appearance" role="tabpanel" aria-labelledby="tab-appearance">
+        <div class="settings-group">
+          <div class="settings-group-header">
+            <div class="settings-group-title">Theme Mode</div>
+            <button class="reset-default-btn" id="reset-appearance-btn">Reset to Default</button>
+          </div>
+          <div class="settings-row" style="background:transparent;border:none;padding:0;">
+            <div class="theme-picker" role="radiogroup" aria-label="Select theme">
+              <button class="theme-btn" data-theme="light" role="radio" aria-checked="false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                Light
+              </button>
+              <button class="theme-btn active" data-theme="dark" role="radio" aria-checked="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                Dark
+              </button>
+              <button class="theme-btn" data-theme="system" role="radio" aria-checked="false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                System
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">UI Accent & Hover Color</div>
+          <div class="settings-row color-picker-row">
+            <div class="color-swatches" id="ui-color-swatches" role="radiogroup" aria-label="Select UI accent color">
+              <button class="color-swatch active" data-color="#00b4d8" style="background:#00b4d8;" aria-label="Cyan" title="Cyan"></button>
+              <button class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;" aria-label="Blue" title="Blue"></button>
+              <button class="color-swatch" data-color="#6366f1" style="background:#6366f1;" aria-label="Indigo" title="Indigo"></button>
+              <button class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" aria-label="Purple" title="Purple"></button>
+              <button class="color-swatch" data-color="#ec4899" style="background:#ec4899;" aria-label="Pink" title="Pink"></button>
+              <button class="color-swatch" data-color="#ef4444" style="background:#ef4444;" aria-label="Red" title="Red"></button>
+            </div>
+            <div class="custom-color-picker">
+              <input type="color" id="accent-picker" title="Choose custom accent color">
+              <span>Custom</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Font Color</div>
+          <div class="settings-row color-picker-row">
+            <div class="color-swatches" id="font-color-swatches" role="radiogroup" aria-label="Select font color">
+              <button class="color-swatch active" data-color="#f0f0f5" style="background:#f0f0f5;" aria-label="White" title="White"></button>
+              <button class="color-swatch" data-color="#cbd5e1" style="background:#cbd5e1;" aria-label="Silver" title="Silver"></button>
+              <button class="color-swatch" data-color="#fcd34d" style="background:#fcd34d;" aria-label="Gold" title="Gold"></button>
+              <button class="color-swatch" data-color="#f9a8d4" style="background:#f9a8d4;" aria-label="Soft Pink" title="Soft Pink"></button>
+              <button class="color-swatch" data-color="#93c5fd" style="background:#93c5fd;" aria-label="Soft Blue" title="Soft Blue"></button>
+              <button class="color-swatch" data-color="#6ee7b7" style="background:#6ee7b7;" aria-label="Soft Green" title="Soft Green"></button>
+            </div>
+            <div class="custom-color-picker">
+              <input type="color" id="font-picker" title="Choose custom font color">
+              <span>Custom</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Background Color</div>
+          <div class="settings-row color-picker-row">
+            <div class="color-swatches" id="bg-color-swatches" role="radiogroup" aria-label="Select background color">
+              <button class="color-swatch active" data-color="#0f0f1a" style="background:#0f0f1a;" aria-label="Midnight" title="Midnight"></button>
+              <button class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e;" aria-label="Deep Blue" title="Deep Blue"></button>
+              <button class="color-swatch" data-color="#121212" style="background:#121212;" aria-label="Pure Black" title="Pure Black"></button>
+              <button class="color-swatch" data-color="#1e272e" style="background:#1e272e;" aria-label="Black Pearl" title="Black Pearl"></button>
+              <button class="color-swatch" data-color="#130f40" style="background:#130f40;" aria-label="Deep Marine" title="Deep Marine"></button>
+              <button class="color-swatch" data-color="#192a56" style="background:#192a56;" aria-label="Mazarine Blue" title="Mazarine Blue"></button>
+            </div>
+            <div class="custom-color-picker">
+              <input type="color" id="bg-picker" title="Choose custom background color">
+              <span>Custom</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Interface</div>
+          <div class="settings-row range-row">
+            <div class="range-header">
+              <span class="settings-row-label">Window Opacity</span>
+              <span class="range-value" id="opacity-value">100%</span>
+            </div>
+            <input type="range" id="opacity-slider" min="50" max="100" value="100" aria-label="Window opacity">
+          </div>
+          
+          <div class="settings-row">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Font Size</div>
+              <div class="settings-row-desc">Adjust transcription text scale</div>
+            </div>
+            <div class="font-size-picker" role="radiogroup" aria-label="Select font size">
+              <button class="font-size-btn" data-size="small" role="radio" aria-checked="false">Small</button>
+              <button class="font-size-btn active" data-size="medium" role="radio" aria-checked="true">Med</button>
+              <button class="font-size-btn" data-size="large" role="radio" aria-checked="false">Large</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Accessibility</div>
+          <div class="settings-row">
+            <div class="settings-row-info">
+              <div class="settings-row-label">High Contrast</div>
+              <div class="settings-row-desc">Enhanced visibility for UI elements</div>
+            </div>
+            <label class="toggle" aria-label="Toggle high contrast mode">
+              <input type="checkbox" id="toggle-high-contrast">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Shortcuts ─────────────────────────────────────────── -->
+      <section class="settings-section" id="section-shortcuts" role="tabpanel" aria-labelledby="tab-shortcuts">
+        <div class="settings-group">
+          <div class="settings-group-title">Global Shortcuts</div>
+
+          <div class="shortcut-card">
+            <div class="shortcut-info">
+              <div class="settings-row-label">Toggle Listening</div>
+              <div class="settings-row-desc">Start or stop voice recognition from anywhere</div>
+            </div>
+            <div class="shortcut-field">
+              <div class="shortcut-display" id="shortcut-display" tabindex="0" role="button" aria-label="Click to record new shortcut">Ctrl+Shift+Space</div>
+              <button class="shortcut-reset-btn" id="shortcut-reset" aria-label="Reset shortcut to default">Reset</button>
+            </div>
+          </div>
+
+          <div class="shortcut-card">
+            <div class="shortcut-info">
+              <div class="settings-row-label">Hold to Pause Key</div>
+              <div class="settings-row-desc">Hold this key to temporarily pause recognition</div>
+            </div>
+            <div class="shortcut-field">
+              <div class="shortcut-display" id="pause-key-display" tabindex="0" role="button" aria-label="Click to record pause key">Space</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Voice Commands</div>
+          <div class="command-list-container">
+            <div class="command-item">
+              <span class="command-trigger">"pause"</span>
+              <span class="command-action">pause recognition</span>
+            </div>
+            <div class="command-item">
+              <span class="command-trigger">"resume"</span>
+              <span class="command-action">resume recognition</span>
+            </div>
+            <div class="command-item">
+              <span class="command-trigger">"stop"</span>
+              <span class="command-action">stop recognition</span>
+            </div>
+            <div class="command-item">
+              <span class="command-trigger">"clear"</span>
+              <span class="command-action">clear transcript</span>
+            </div>
+            <div class="command-item">
+              <span class="command-trigger">"copy"</span>
+              <span class="command-action">copy transcript</span>
+            </div>
+            <div class="command-item">
+              <span class="command-trigger">"settings"</span>
+              <span class="command-action">open settings</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Language ──────────────────────────────────────────── -->
+      <section class="settings-section" id="section-language" role="tabpanel" aria-labelledby="tab-language">
+        <div class="settings-group">
+          <div class="settings-group-title">Detection</div>
+          <div class="settings-row premium-row">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Auto-detect Language</div>
+              <div class="settings-row-desc">Automatically identify the spoken language</div>
+            </div>
+            <label class="toggle" aria-label="Toggle auto-detect language">
+              <input type="checkbox" id="toggle-auto-detect">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Available Languages</div>
+          <div class="lang-grid" role="radiogroup" aria-label="Select language">
+            <div class="lang-card active" data-lang="en-US" role="radio" aria-checked="true" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇺🇸</span>
+              <div class="lang-info">
+                <span class="lang-name">English</span>
+                <span class="lang-code">en-US</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="bn-BD" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇧🇩</span>
+              <div class="lang-info">
+                <span class="lang-name">Bengali</span>
+                <span class="lang-code">bn-BD</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="hi-IN" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇮🇳</span>
+              <div class="lang-info">
+                <span class="lang-name">Hindi</span>
+                <span class="lang-code">hi-IN</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="ur-PK" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇵🇰</span>
+              <div class="lang-info">
+                <span class="lang-name">Urdu</span>
+                <span class="lang-code">ur-PK</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="ar-SA" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇸🇦</span>
+              <div class="lang-info">
+                <span class="lang-name">Arabic</span>
+                <span class="lang-code">ar-SA</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="fr-FR" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇫🇷</span>
+              <div class="lang-info">
+                <span class="lang-name">French</span>
+                <span class="lang-code">fr-FR</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="es-ES" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇪🇸</span>
+              <div class="lang-info">
+                <span class="lang-name">Spanish</span>
+                <span class="lang-code">es-ES</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="zh-CN" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇨🇳</span>
+              <div class="lang-info">
+                <span class="lang-name">Chinese</span>
+                <span class="lang-code">zh-CN</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+            <div class="lang-card" data-lang="ja-JP" role="radio" aria-checked="false" tabindex="0">
+              <span class="lang-flag" aria-hidden="true">🇯🇵</span>
+              <div class="lang-info">
+                <span class="lang-name">Japanese</span>
+                <span class="lang-code">ja-JP</span>
+              </div>
+              <div class="lang-check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Recognition Quality</div>
+          <div class="settings-row range-row">
+            <div class="range-header">
+              <span class="settings-row-label">Confidence Threshold</span>
+              <span class="range-value" id="confidence-value">60%</span>
+            </div>
+            <input type="range" id="confidence-slider" min="40" max="95" value="60" aria-label="Confidence threshold">
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Permissions ───────────────────────────────────────── -->
+      <section class="settings-section" id="section-permissions" role="tabpanel" aria-labelledby="tab-permissions">
+        <div class="settings-group">
+          <div class="settings-group-title">System Permissions</div>
+
+          <div class="perm-card" role="group" aria-labelledby="perm-mic-label">
+            <div class="perm-card-icon mic">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+            </div>
+            <div class="perm-card-content">
+              <div class="perm-card-header">
+                <span class="perm-label" id="perm-mic-label">Microphone</span>
+                <span class="perm-badge unknown" id="mic-perm-badge">Not Asked</span>
+              </div>
+              <p class="perm-desc">Required for voice recognition. VoiceType Pro needs access to your microphone to transcribe speech.</p>
+              <button class="perm-action-btn" id="mic-perm-btn">Request Access</button>
+            </div>
+          </div>
+
+          <div class="perm-card" role="group" aria-labelledby="perm-cam-label">
+            <div class="perm-card-icon cam">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            <div class="perm-card-content">
+              <div class="perm-card-header">
+                <span class="perm-label" id="perm-cam-label">Camera</span>
+                <span class="perm-badge unknown" id="cam-perm-badge">Not Asked</span>
+              </div>
+              <p class="perm-desc">Reserved for future features like lip-reading assistance and visual recognition.</p>
+              <button class="perm-action-btn" id="cam-perm-btn">Request Access</button>
+            </div>
+          </div>
+
+          <div class="perm-card" role="group" aria-labelledby="perm-acc-label">
+            <div class="perm-card-icon acc">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="perm-card-content">
+              <div class="perm-card-header">
+                <span class="perm-label" id="perm-acc-label">Accessibility</span>
+                <span class="perm-badge warning" id="acc-perm-badge">Required</span>
+              </div>
+              <p class="perm-desc">Needed to inject text into other applications. Grant accessibility access in System Preferences.</p>
+              <button class="perm-action-btn primary" id="accessibility-btn">Open System Preferences</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── About ─────────────────────────────────────────────── -->
+      <section class="settings-section" id="section-about" role="tabpanel" aria-labelledby="tab-about">
+        <div class="developer-profile">
+          <div class="profile-image-container">
+            <div class="profile-glow"></div>
+            <img src="../assets/mic.svg" alt="Md. Pranto Islam" class="profile-image">
+          </div>
+          
+          <h2 class="developer-name">Md. Pranto Islam</h2>
+          <p class="developer-title">Software Developer | AI Enthusiast</p>
+          
+          <div class="developer-divider"></div>
+          
+          <div class="social-links">
+            <a href="https://facebook.com" class="social-icon facebook" target="_blank" aria-label="Facebook" data-tooltip="Facebook">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            </a>
+            <a href="https://instagram.com" class="social-icon instagram" target="_blank" aria-label="Instagram" data-tooltip="Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
+            <a href="https://linkedin.com" class="social-icon linkedin" target="_blank" aria-label="LinkedIn" data-tooltip="LinkedIn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+            </a>
+            <a href="https://github.com" class="social-icon github" target="_blank" aria-label="GitHub" data-tooltip="GitHub">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            </a>
+          </div>
+
+          <button class="contact-me-btn">Contact Me</button>
+          
+          <div class="app-info-footer">
+            <span class="app-version-badge">VoiceType Pro v1.0.0</span>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /settings-content -->
+  </aside>
+
+  <!-- ─── Onboarding Modal ──────────────────────────────────────── -->
+  <div id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome to VoiceType Pro" aria-hidden="true">
+    <div class="onboarding-card">
+      <div class="onboarding-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+      </div>
+      <h2 class="onboarding-title">Welcome to VoiceType Pro</h2>
+      <p class="onboarding-desc">
+        Type with your voice — anywhere on your screen. To get started, VoiceType Pro needs access to your microphone.
+      </p>
+      <button class="onboarding-btn" id="onboarding-permit-btn">
+        Allow Microphone Access
+      </button>
+      <button class="onboarding-skip" id="onboarding-skip">
+        Skip for now
+      </button>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script src="waveform.js"></script>
+<script src="settings.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>

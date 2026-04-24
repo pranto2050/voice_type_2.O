@@ -1,0 +1,74 @@
+appId: app.voicetypepro
+productName: VoiceType Pro
+copyright: Copyright © 2024 VoiceType Pro
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - "**/*"
+  - "!python/**"
+  - "!dist/**"
+  - "!node_modules/.cache/**"
+
+extraResources:
+  - from: python/dist/
+    to: python/
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+  icon: assets/icon.ico
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: VoiceType Pro
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/icon.icns
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+
+dmg:
+  title: VoiceType Pro
+  icon: assets/icon.icns
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: assets/icon.png
+  category: Utility
+  maintainer: VoiceType Pro <contact@voicetypepro.app>
+
+publish:
+  provider: github
+  private: false
