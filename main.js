@@ -205,13 +205,27 @@ function injectText(text) {
   clipboard.writeText(text);
 
   const { exec } = require('child_process');
+  let cmd = '';
   if (process.platform === 'darwin') {
-    exec(`osascript -e 'tell application "System Events" to keystroke "v" using command down'`);
+    cmd = `osascript -e 'tell application "System Events" to keystroke "v" using command down'`;
   } else if (process.platform === 'win32') {
-    exec('powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait(\'^v\')"');
+    cmd = 'powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait(\'^v\')"';
   } else {
-    exec('xdotool key ctrl+v');
+    cmd = 'xdotool key ctrl+v';
   }
+
+  exec(cmd, (error) => {
+    if (error) {
+      console.error('Injection error:', error.message);
+      if (process.platform === 'darwin' && error.message.includes('not allowed to send keystrokes')) {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('engine-error', { 
+            message: 'Permission denied: Please grant Accessibility permissions to your Terminal in System Settings.' 
+          });
+        }
+      }
+    }
+  });
 
   setTimeout(() => clipboard.writeText(prev), 500);
 }
@@ -428,6 +442,16 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   registerShortcuts();
+
+  // Prompt for macOS accessibility permissions automatically on startup
+  if (process.platform === 'darwin') {
+    setTimeout(() => {
+      const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
+      if (!isTrusted) {
+        console.log('Prompting for macOS Accessibility permissions...');
+      }
+    }, 1000);
+  }
 
   setTimeout(() => {
     startPythonEngine();
