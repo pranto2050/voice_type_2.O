@@ -159,6 +159,7 @@
       <button class="settings-tab" data-tab="shortcuts" role="tab" aria-selected="false" aria-controls="section-shortcuts">Shortcuts</button>
       <button class="settings-tab" data-tab="language" role="tab" aria-selected="false" aria-controls="section-language">Language</button>
       <button class="settings-tab" data-tab="permissions" role="tab" aria-selected="false" aria-controls="section-permissions">Permissions</button>
+      <button class="settings-tab" data-tab="easy-access" role="tab" aria-selected="false" aria-controls="section-easy-access">Easy Access</button>
       <button class="settings-tab" data-tab="about" role="tab" aria-selected="false" aria-controls="section-about">About</button>
     </nav>
 
@@ -550,6 +551,48 @@
         </div>
       </section>
 
+      <!-- ── Easy Access ─────────────────────────────────────── -->
+      <section class="settings-section" id="section-easy-access" role="tabpanel" aria-labelledby="tab-easy-access">
+        <div class="settings-group">
+          <div class="settings-group-title">Stealth Mode</div>
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Push-to-Talk (Hold)</div>
+              <div class="settings-row-desc">Show minimalist waves at bottom center while holding key</div>
+            </div>
+            <div class="shortcut-field">
+              <div class="shortcut-display" id="ptt-shortcut-display" tabindex="0" role="button" aria-label="Click to record PTT shortcut">Ctrl+Alt+S</div>
+            </div>
+          </div>
+          
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Minimalist Wave UI</div>
+              <div class="settings-row-desc">Only show waves when using the Easy Access shortcut</div>
+            </div>
+            <label class="toggle" aria-label="Toggle minimalist wave UI">
+              <input type="checkbox" id="toggle-mini-wave" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Positioning</div>
+          <p class="settings-row-desc" style="margin-bottom: 12px; padding: 0 4px;">The wave overlay will appear at the bottom center of your primary screen.</p>
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Auto-hide Main Window</div>
+              <div class="settings-row-desc">Hide the main app when using the shortcut</div>
+            </div>
+            <label class="toggle" aria-label="Toggle auto-hide main window">
+              <input type="checkbox" id="toggle-ptt-hide-main" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
       <!-- ── About ─────────────────────────────────────────────── -->
       <section class="settings-section" id="section-about" role="tabpanel" aria-labelledby="tab-about">
         <div class="developer-profile">
@@ -610,6 +653,26 @@
       <button class="onboarding-skip" id="onboarding-skip">
         Skip for now
       </button>
+    </div>
+  </div>
+
+  <!-- ─── Easy Wave Overlay ────────────────────────────────────── -->
+  <div id="easy-wave-overlay" class="hidden" aria-hidden="true">
+    <div class="easy-wave-content">
+      <div class="easy-wave-mic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        </svg>
+      </div>
+      <div class="easy-wave-bars">
+        <div class="easy-bar"></div>
+        <div class="easy-bar"></div>
+        <div class="easy-bar"></div>
+        <div class="easy-bar"></div>
+        <div class="easy-bar"></div>
+      </div>
+      <span class="easy-wave-text">Listening...</span>
     </div>
   </div>
 

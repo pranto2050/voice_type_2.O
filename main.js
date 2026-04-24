@@ -20,6 +20,9 @@ const store = new Store({
     confidenceThreshold: 0.6,
     micDevice: 'default',
     alwaysOnTop: false,
+    pttShortcut: 'CommandOrControl+Alt+S',
+    useMiniWave: true,
+    pttHideMain: true,
     windowBounds: { width: 420, height: 680 }
   }
 });
@@ -253,7 +256,28 @@ function registerShortcuts() {
       }
     });
   } catch (e) {
-    console.error('Failed to register shortcut:', e);
+    console.error('Failed to register toggle shortcut:', e);
+  }
+
+  const pttShortcut = store.get('pttShortcut');
+  try {
+    globalShortcut.register(pttShortcut, () => {
+      // Toggle PTT state
+      const newState = !isListening;
+      if (newState) {
+        startListening();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('ptt-state', { active: true });
+        }
+      } else {
+        stopListening();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('ptt-state', { active: false });
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Failed to register PTT shortcut:', e);
   }
 }
 
@@ -400,6 +424,14 @@ ipcMain.on('set-opacity', (_, value) => {
 ipcMain.handle('inject-text', (_, text) => {
   injectText(text);
   return true;
+});
+
+ipcMain.on('hide-window', () => {
+  if (mainWindow) mainWindow.hide();
+});
+
+ipcMain.on('show-window', () => {
+  if (mainWindow) mainWindow.show();
 });
 
 function applySettingEffect(key, value) {

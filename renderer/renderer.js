@@ -14,6 +14,7 @@ class VoiceTypeApp {
     this.voiceCommandBuffer = '';
     this.voiceCommandTimer = null;
     this.isMiniMode = false;
+    this.isPTTMode = false;
 
     this._init();
   }
@@ -220,6 +221,10 @@ class VoiceTypeApp {
     window.voiceAPI.onEngineError((data) => {
       this._updateEngineStatus('error', data.message || 'Engine error');
     });
+
+    window.voiceAPI.onPTTState((data) => {
+      this._handlePTTState(data.active);
+    });
   }
 
   _initLanguageSelector() {
@@ -377,6 +382,48 @@ class VoiceTypeApp {
       micIcon.style.display = this.isPaused ? 'none' : 'block';
       pauseIcon.style.display = this.isPaused ? 'block' : 'none';
     }
+  }
+
+  _handlePTTState(active) {
+    if (active) {
+      this.isPTTMode = true;
+      this._showWaveOverlay();
+      if (!this.isListening) {
+        this._toggleListening();
+      }
+    } else {
+      this.isPTTMode = false;
+      this._hideWaveOverlay();
+      if (this.isListening) {
+        this._toggleListening();
+      }
+    }
+  }
+
+  _showWaveOverlay() {
+    const overlay = document.getElementById('easy-wave-overlay');
+    const appEl = document.getElementById('app');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+    
+    // Stealth mode: Hide main window if configured
+    window.voiceAPI.getSettings().then(settings => {
+      if (settings.pttHideMain) {
+        window.voiceAPI.hideWindow();
+      }
+    });
+  }
+
+  _hideWaveOverlay() {
+    const overlay = document.getElementById('easy-wave-overlay');
+    const appEl = document.getElementById('app');
+    if (overlay) {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    window.voiceAPI.showWindow();
   }
 
   _toggleMiniMode(mini) {

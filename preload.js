@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   setWindowSize: (width, height) => ipcRenderer.send('set-window-size', width, height),
   setAlwaysOnTop: (val) => ipcRenderer.send('set-always-on-top', val),
   setOpacity: (val) => ipcRenderer.send('set-opacity', val),
+  hideWindow: () => ipcRenderer.send('hide-window'),
+  showWindow: () => ipcRenderer.send('show-window'),
 
   // Permissions
   requestMicPermission: () => ipcRenderer.invoke('request-mic-permission'),
@@ -61,6 +63,10 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   onPythonLog: (cb) => {
     ipcRenderer.on('python-log', (_, data) => cb(data));
     return () => ipcRenderer.removeAllListeners('python-log');
+  },
+  onPTTState: (cb) => {
+    ipcRenderer.on('ptt-state', (_, data) => cb(data));
+    return () => ipcRenderer.removeAllListeners('ptt-state');
   },
 
   platform: process.platform

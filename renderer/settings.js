@@ -46,6 +46,7 @@ class SettingsManager {
     this._applyShortcuts();
     this._applyLanguage();
     this._applyPermissions();
+    this._applyEasyAccess();
     this._applyAbout();
   }
 
@@ -142,6 +143,9 @@ class SettingsManager {
 
     const pauseDisplay = document.getElementById('pause-key-display');
     if (pauseDisplay) pauseDisplay.textContent = this.settings.pauseKey || 'Space';
+
+    const pttDisplay = document.getElementById('ptt-shortcut-display');
+    if (pttDisplay) pttDisplay.textContent = this.settings.pttShortcut || 'Ctrl+Alt+S';
   }
 
   _applyLanguage() {
@@ -185,6 +189,14 @@ class SettingsManager {
   _setPermBadge(el, status) {
     el.textContent = status === 'granted' ? 'Granted' : status === 'denied' ? 'Denied' : 'Not Asked';
     el.className = 'perm-badge ' + (status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'unknown');
+  }
+
+  _applyEasyAccess() {
+    const miniWaveToggle = document.getElementById('toggle-mini-wave');
+    if (miniWaveToggle) miniWaveToggle.checked = !!this.settings.useMiniWave;
+
+    const pttHideToggle = document.getElementById('toggle-ptt-hide-main');
+    if (pttHideToggle) pttHideToggle.checked = !!this.settings.pttHideMain;
   }
 
   _applyAbout() {
@@ -426,6 +438,28 @@ class SettingsManager {
 
     // About
     const updateBtn = document.getElementById('check-update-btn');
+
+    // Easy Access
+    const pttDisplay = document.getElementById('ptt-shortcut-display');
+    if (pttDisplay) {
+      pttDisplay.addEventListener('click', () => {
+        this._startRecordingShortcut('ptt-shortcut-display', 'pttShortcut');
+      });
+    }
+
+    const miniWaveToggle = document.getElementById('toggle-mini-wave');
+    if (miniWaveToggle) {
+      miniWaveToggle.addEventListener('change', (e) => {
+        this._save('useMiniWave', e.target.checked);
+      });
+    }
+
+    const pttHideToggle = document.getElementById('toggle-ptt-hide-main');
+    if (pttHideToggle) {
+      pttHideToggle.addEventListener('change', (e) => {
+        this._save('pttHideMain', e.target.checked);
+      });
+    }
     if (updateBtn) {
       updateBtn.addEventListener('click', () => {
         updateBtn.textContent = 'Checking...';
