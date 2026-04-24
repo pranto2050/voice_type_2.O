@@ -516,14 +516,18 @@ class SettingsManager {
       if (e.ctrlKey || e.metaKey) parts.push('CommandOrControl');
       if (e.shiftKey) parts.push('Shift');
       if (e.altKey) parts.push('Alt');
-      const mainKey = e.key.length === 1 ? e.key.toUpperCase() :
-        e.key === ' ' ? 'Space' : e.key;
-      if (mainKey && !['Control','Meta','Shift','Alt'].includes(mainKey)) {
+      
+      const mainKey = e.key === ' ' ? 'Space' : 
+        (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+        
+      if (mainKey && !['Control', 'Meta', 'Shift', 'Alt'].includes(mainKey)) {
         parts.push(mainKey);
       }
 
       const combo = parts.join('+');
-      if (combo && parts.length > 1) {
+      const hasNonModifier = parts.some(p => !['CommandOrControl', 'Shift', 'Alt'].includes(p));
+
+      if (combo && (parts.length > 1 || hasNonModifier)) {
         const displayCombo = combo.replace('CommandOrControl', window.voiceAPI.platform === 'darwin' ? 'Cmd' : 'Ctrl');
         display.textContent = displayCombo;
         this._save(settingKey, combo);

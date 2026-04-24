@@ -328,3 +328,22 @@ If you encounter issues:
 
 **Last Updated:** April 2026  
 **Version:** 1.0.0
+
+
+
+
+
+
+## 📝 npm Scripts
+
+```bash
+npm start              # Launch the app
+npm run build          # Build for current OS
+npm run build:mac      # Build macOS .dmg and .app
+npm run build:win      # Build Windows .exe
+npm run pack           # Create package without installer
+```
+
+```bash
+Previously, the system only saved shortcuts if they contained more than one key (e.g., Ctrl+Space ). I have updated the logic in settings.js to allow single keys (like M , P , or Space ) for shortcuts that don't strictly require modifiers.
+```

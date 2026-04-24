@@ -591,8 +591,11 @@ class VoiceTypeApp {
     // Prevent shortcut recording from triggering app shortcuts
     if (this.settings && this.settings.recordingShortcut) return;
 
-    // Space as hold-to-pause when listening (outside of inputs)
-    if (e.key === ' ' && this.isListening && !this._isInputFocused()) {
+    // Custom pause key when listening (outside of inputs)
+    const pauseKey = (this.settings && this.settings.settings && this.settings.settings.pauseKey) || 'Space';
+    const isPauseKey = pauseKey === 'Space' ? e.key === ' ' : e.key.toLowerCase() === pauseKey.toLowerCase();
+
+    if (isPauseKey && this.isListening && !this._isInputFocused()) {
       e.preventDefault();
       this._pause();
     }
@@ -600,7 +603,11 @@ class VoiceTypeApp {
 
   _handleKeyUp(e) {
     if (this.settings && this.settings.recordingShortcut) return;
-    if (e.key === ' ' && this.isPaused && !this._isInputFocused()) {
+    
+    const pauseKey = (this.settings && this.settings.settings && this.settings.settings.pauseKey) || 'Space';
+    const isPauseKey = pauseKey === 'Space' ? e.key === ' ' : e.key.toLowerCase() === pauseKey.toLowerCase();
+
+    if (isPauseKey && this.isPaused && !this._isInputFocused()) {
       this._resume();
     }
   }
