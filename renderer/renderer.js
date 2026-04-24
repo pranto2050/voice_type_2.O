@@ -225,6 +225,17 @@ class VoiceTypeApp {
     window.voiceAPI.onPTTState((data) => {
       this._handlePTTState(data.active);
     });
+    
+    window.voiceAPI.onLanguageSwitched((data) => {
+      this._updateStatusLang(data.language);
+      const select = document.getElementById('lang-select');
+      if (select) select.value = data.language;
+      // Also update settings if open
+      if (this.settings && this.settings.settings) {
+        this.settings.settings.language = data.language;
+        this.settings._applyLanguage();
+      }
+    });
   }
 
   _initLanguageSelector() {

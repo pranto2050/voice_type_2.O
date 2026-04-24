@@ -150,12 +150,17 @@ class SettingsManager {
 
   _applyLanguage() {
     const autoToggle = document.getElementById('toggle-auto-detect');
-    if (autoToggle) autoToggle.checked = !!this.settings.autoDetect;
+    if (autoToggle) {
+      autoToggle.checked = !!this.settings.autoDetect;
+    }
 
     const currentLang = this.settings.language || 'en-US';
     document.querySelectorAll('.lang-card').forEach(item => {
       item.classList.toggle('active', item.dataset.lang === currentLang);
     });
+
+    const langSelect = document.getElementById('lang-select');
+    if (langSelect) langSelect.value = currentLang;
 
     const confidenceSlider = document.getElementById('confidence-slider');
     const confidenceValue = document.getElementById('confidence-value');
@@ -163,6 +168,9 @@ class SettingsManager {
       confidenceSlider.value = Math.round((this.settings.confidenceThreshold ?? 0.6) * 100);
       if (confidenceValue) confidenceValue.textContent = confidenceSlider.value + '%';
     }
+
+    // Update UI state based on auto-detect
+    this._updateAutoDetectUI(!!this.settings.autoDetect);
   }
 
   async _applyPermissions() {
@@ -231,6 +239,15 @@ class SettingsManager {
     if (micDeviceSelect) {
       micDeviceSelect.addEventListener('change', (e) => {
         this._save('micDevice', e.target.value);
+      });
+    }
+
+    const autoToggle = document.getElementById('toggle-auto-detect');
+    if (autoToggle) {
+      autoToggle.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        this._save('autoDetect', enabled);
+        this._updateAutoDetectUI(enabled);
       });
     }
 
@@ -372,17 +389,6 @@ class SettingsManager {
     }
 
     // Language
-    const autoToggle = document.getElementById('toggle-auto-detect');
-    if (autoToggle) {
-      autoToggle.addEventListener('change', (e) => {
-        this._save('autoDetect', e.target.checked);
-        document.querySelectorAll('.lang-card').forEach(item => {
-          item.style.opacity = e.target.checked ? '0.4' : '1';
-          item.style.pointerEvents = e.target.checked ? 'none' : 'auto';
-        });
-      });
-    }
-
     document.querySelectorAll('.lang-card').forEach(item => {
       item.addEventListener('click', () => {
         const lang = item.dataset.lang;
@@ -541,6 +547,55 @@ class SettingsManager {
 
     document.addEventListener('keydown', keydown);
     document.addEventListener('keyup', keyup);
+  }
+
+  _updateAutoDetectUI(enabled) {
+    // Update language cards container
+    const manualGroup = document.getElementById('manual-language-selection');
+    if (manualGroup) {
+      manualGroup.style.opacity = enabled ? '0.5' : '1';
+      manualGroup.style.pointerEvents = enabled ? 'none' : 'auto';
+      
+      // Update individual cards
+      document.querySelectorAll('.lang-card').forEach(item => {
+        if (enabled) {
+          item.classList.remove('active');
+        } else {
+          const currentLang = this.settings.language || 'en-US';
+          item.classList.toggle('active', item.dataset.lang === currentLang);
+        }
+      });
+    }
+
+    // Update bottom bar language select
+    const langSelect = document.getElementById('lang-select');
+    if (langSelect) {
+      langSelect.disabled = enabled;
+      langSelect.style.opacity = enabled ? '0.5' : '1';
+      langSelect.style.cursor = enabled ? 'not-allowed' : 'pointer';
+    }
+
+    // Update status display
+    const statusLang = document.getElementById('status-lang');
+    if (statusLang) {
+      if (enabled) {
+        statusLang.textContent = 'Auto-detecting...';
+      } else {
+        const currentLang = this.settings.language || 'en-US';
+        const langNames = {
+          'en-US': 'English',
+          'bn-BD': 'Bengali',
+          'hi-IN': 'Hindi',
+          'ur-PK': 'Urdu',
+          'ar-SA': 'Arabic',
+          'fr-FR': 'French',
+          'es-ES': 'Spanish',
+          'zh-CN': 'Chinese',
+          'ja-JP': 'Japanese'
+        };
+        statusLang.textContent = langNames[currentLang] || currentLang;
+      }
+    }
   }
 
   _applyTheme(theme) {

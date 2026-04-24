@@ -1,0 +1,661 @@
+Add a complete "Long Press to Listen" (Push-to-Talk) feature to the existing VoiceType Pro Electron desktop app. This must be fully working, beautifully animated, and configurable from settings. Every file change must be complete with no placeholders.
+
+════════════════════════════════════════
+ FEATURE OVERVIEW
+════════════════════════════════════════
+
+Name    : Long Press to Listen (Push-to-Talk mode)
+Trigger : User holds a customizable key/button for
+          3 seconds → voice recognition activates
+          automatically. Release the key → recognition
+          stops immediately and automatically.
+Display : A beautiful full overlay animation appears
+          on screen while the key is held, showing the
+          app is actively listening.
+Control : Can be fully enabled/disabled and the key
+          can be customized from Settings → Shortcuts.
+
+════════════════════════════════════════
+ DETAILED BEHAVIOR SPEC
+════════════════════════════════════════
+
+STEP 1 — KEY HOLD DETECTION (3-second threshold):
+  - User presses and HOLDS the configured key
+    (default: Right Alt / Option key)
+  - A circular progress ring starts filling up
+    around the mic icon (0% → 100% over 3 seconds)
+  - If user releases BEFORE 3 seconds:
+    → ring resets, nothing happens, no listening
+  - If user holds for 3 full seconds:
+    → listening activates automatically
+    → full animation kicks in (see below)
+    → voice recognition starts via Python engine
+
+STEP 2 — ACTIVE LISTENING STATE (key held):
+  - As long as the key is held → recognition runs
+  - Transcribed text is injected into focused input
+  - Full overlay animation plays continuously
+  - Status pill shows "LISTENING..." in green
+
+STEP 3 — KEY RELEASE (auto-stop):
+  - User releases the key → recognition stops instantly
+  - Overlay animation fades out smoothly (300ms)
+  - Progress ring resets to 0%
+  - Status pill returns to idle state
+  - A subtle "done" ripple effect plays once
+
+════════════════════════════════════════
+ ANIMATION SPEC (Beautiful Visual Feedback)
+════════════════════════════════════════
+
+── PHASE 1: CHARGING RING (0s → 3s hold) ──────────
+
+Element: SVG circular progress ring around mic icon
+  - Circle radius: 52px, stroke-width: 3px
+  - Color: var(--accent, #7F77DD)
+  - Stroke-dasharray: 326.7 (circumference of r=52)
+  - Stroke-dashoffset: animates 326.7 → 0 over 3s
+  - Easing: linear
+  - Glow: filter: drop-shadow(0 0 6px var(--accent))
+
+Small label below mic during charging:
+  "Hold to activate..." → fades in at 0.5s
+  Text pulses softly (opacity 0.6 → 1 → 0.6, 1s loop)
+
+── PHASE 2: ACTIVATION BURST (at 3s mark) ──────────
+
+Play a one-shot burst animation:
+  1. RIPPLE BURST: 3 concentric rings expand outward
+     from mic center, scale 1→2.5, opacity 1→0
+     staggered 0ms / 100ms / 200ms, each 600ms
+     Color: var(--accent) with 60% opacity
+
+  2. MIC ICON FLASH: mic icon briefly scales to 1.2
+     then settles at 1.1 (stays slightly larger while
+     listening) — 300ms spring ease
+
+  3. BACKGROUND GLOW: body gets a soft radial gradient
+     overlay: radial-gradient(ellipse at center,
+     rgba(127,119,221,0.12) 0%, transparent 70%)
+     fades in over 400ms, stays while listening
+
+  4. ACTIVATION LABEL: "LISTENING" text appears with
+     letter-spacing animation (0px → 6px) over 400ms
+     Color: var(--accent), font-size: 13px, uppercase
+     Placed below the mic icon
+
+── PHASE 3: ACTIVE LISTENING ANIMATION (ongoing) ──
+
+1. BREATHING GLOW RING:
+   A continuous ring around mic icon that breathes:
+   box-shadow: 0 0 0 0 rgba(accent,0.7)
+   → 0 0 0 18px rgba(accent,0) over 1.5s infinite
+   CSS: @keyframes breath-ring {
+     0%   { box-shadow: 0 0 0 0px rgba(127,119,221,0.7); }
+     70%  { box-shadow: 0 0 0 18px rgba(127,119,221,0); }
+     100% { box-shadow: 0 0 0 0px rgba(127,119,221,0); }
+   }
+
+2. SOUNDWAVE BARS (5 vertical bars):
+   Position: below mic icon, above waveform canvas
+   Each bar animates height independently:
+   bar heights cycle: 8px → 32px → 8px
+   Stagger: bar1=0ms, bar2=150ms, bar3=75ms,
+            bar4=225ms, bar5=100ms
+   Bar color: var(--accent) with 80% opacity
+   Border-radius: 3px, width: 4px each, gap: 5px
+   CSS: @keyframes bar-dance {
+     0%,100% { height: 8px;  opacity: 0.5; }
+     50%     { height: 32px; opacity: 1;   }
+   }
+
+3. FLOATING MIC OVERLAY (fullscreen subtle):
+   A large semi-transparent mic icon (200px, 8% opacity)
+   centered behind everything, slowly rotates ±5deg:
+   @keyframes mic-float {
+     0%,100% { transform: rotate(-5deg) scale(1);   }
+     50%     { transform: rotate(5deg)  scale(1.04); }
+   }
+   Duration: 3s ease-in-out infinite
+
+4. PARTICLE DOTS (6 dots orbit around mic):
+   6 small dots (6px diameter, var(--accent) color)
+   orbit the mic icon in a circle (radius 70px)
+   Each dot: position = angle + (index * 60deg)
+   Orbit animation: 4s linear infinite
+   Dots fade in/out as they pass top of orbit
+   CSS orbital motion using transform-origin + rotate
+
+5. STATUS PILL:
+   Background pulses: accent color → transparent loop
+   Text: "● LISTENING..." with blinking dot
+   dot blink: @keyframes blink {
+     0%,100% { opacity:1; } 50% { opacity:0; }
+   }
+
+── PHASE 4: RELEASE ANIMATION (key up) ─────────────
+
+1. All animations stop simultaneously
+2. A single outward ripple plays (release feedback)
+3. "LISTENING" label fades out with translateY(-10px)
+4. Background glow fades out over 300ms
+5. Charging ring resets to dashoffset 326.7 instantly
+6. Mic icon returns to normal scale (1.1 → 1.0, 200ms)
+7. Soundwave bars fade to flat height (8px)
+8. Particle dots spiral inward and fade out (400ms)
+9. Status pill returns to idle text + gray color
+
+════════════════════════════════════════
+ JAVASCRIPT IMPLEMENTATION SPEC
+════════════════════════════════════════
+
+Add to renderer/renderer.js:
+
+/* ── Long Press to Listen ───────────────── */
+let longPressTimer   = null;
+let longPressActive  = false;
+let longPressDuration = 3000; // ms — configurable
+let holdKey = 'AltRight';     // default key — configurable
+let holdFeatureEnabled = true; // toggle from settings
+
+const CHARGE_DURATION = 3000;
+let chargeStart = null;
+let chargeAnimFrame = null;
+
+// SVG ring circumference for r=52: 2 * Math.PI * 52 ≈ 326.7
+const RING_CIRCUMFERENCE = 326.7;
+
+function onKeyDown(e) {
+  if (!holdFeatureEnabled) return;
+  if (e.code !== holdKey)  return;
+  if (longPressActive)     return;
+  if (e.repeat)            return; // ignore key repeat
+
+  chargeStart = Date.now();
+  startChargeAnimation();
+
+  longPressTimer = setTimeout(() => {
+    activateLongPressListening();
+  }, CHARGE_DURATION);
+}
+
+function onKeyUp(e) {
+  if (e.code !== holdKey) return;
+  clearTimeout(longPressTimer);
+  cancelAnimationFrame(chargeAnimFrame);
+  resetChargeRing();
+
+  if (longPressActive) {
+    deactivateLongPressListening();
+  }
+}
+
+function startChargeAnimation() {
+  function animate() {
+    const elapsed  = Date.now() - chargeStart;
+    const progress = Math.min(elapsed / CHARGE_DURATION, 1);
+    const offset   = RING_CIRCUMFERENCE * (1 - progress);
+    document.getElementById('charge-ring').style
+      .strokeDashoffset = offset;
+
+    // Show "Hold to activate..." label after 0.5s
+    if (elapsed > 500) {
+      document.getElementById('hold-label').style.opacity = 1;
+    }
+
+    if (progress < 1) {
+      chargeAnimFrame = requestAnimationFrame(animate);
+    }
+  }
+  chargeAnimFrame = requestAnimationFrame(animate);
+}
+
+function resetChargeRing() {
+  cancelAnimationFrame(chargeAnimFrame);
+  document.getElementById('charge-ring').style
+    .strokeDashoffset = RING_CIRCUMFERENCE;
+  document.getElementById('hold-label').style.opacity = 0;
+}
+
+function activateLongPressListening() {
+  longPressActive = true;
+
+  // 1. Play burst animation
+  playActivationBurst();
+
+  // 2. Start voice recognition
+  window.electronAPI.startVoice();
+
+  // 3. Show all active animations
+  document.getElementById('listening-overlay').classList.add('active');
+  document.getElementById('soundwave-bars').classList.add('active');
+  document.getElementById('mic-float-bg').classList.add('active');
+  document.getElementById('particle-orbit').classList.add('active');
+  document.getElementById('status-pill').classList.add('listening');
+
+  // 4. Update label
+  document.getElementById('listening-label').classList.add('visible');
+}
+
+function deactivateLongPressListening() {
+  longPressActive = false;
+
+  // 1. Stop voice recognition
+  window.electronAPI.stopVoice();
+
+  // 2. Play release animation
+  playReleaseAnimation();
+
+  // 3. Remove all active classes after fade
+  setTimeout(() => {
+    document.getElementById('listening-overlay').classList.remove('active');
+    document.getElementById('soundwave-bars').classList.remove('active');
+    document.getElementById('mic-float-bg').classList.remove('active');
+    document.getElementById('particle-orbit').classList.remove('active');
+    document.getElementById('status-pill').classList.remove('listening');
+    document.getElementById('listening-label').classList.remove('visible');
+  }, 400);
+}
+
+function playActivationBurst() {
+  const burst = document.getElementById('burst-container');
+  burst.innerHTML = '';
+  [0, 100, 200].forEach(delay => {
+    const ring = document.createElement('div');
+    ring.className = 'burst-ring';
+    ring.style.animationDelay = delay + 'ms';
+    burst.appendChild(ring);
+  });
+  setTimeout(() => burst.innerHTML = '', 900);
+}
+
+function playReleaseAnimation() {
+  const ripple = document.createElement('div');
+  ripple.className = 'release-ripple';
+  document.getElementById('mic-container').appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+}
+
+// Attach listeners
+document.addEventListener('keydown', onKeyDown);
+document.addEventListener('keyup',   onKeyUp);
+
+// Also support mousedown/mouseup on HOLD button
+const holdBtn = document.getElementById('hold-btn');
+holdBtn.addEventListener('mousedown', () => {
+  onKeyDown({ code: holdKey, repeat: false });
+});
+holdBtn.addEventListener('mouseup', () => {
+  onKeyUp({ code: holdKey });
+});
+holdBtn.addEventListener('mouseleave', () => {
+  onKeyUp({ code: holdKey });
+});
+
+════════════════════════════════════════
+ HTML ADDITIONS (renderer/index.html)
+════════════════════════════════════════
+
+Add INSIDE #mic-container div:
+
+
+
+
+
+
+Hold to activate...
+
+
+
+
+
+
+LISTENING
+
+
+
+
+  
+  
+  
+  
+  
+
+
+
+
+
+
+
+
+
+🎤
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+
+
+
+════════════════════════════════════════
+ CSS ADDITIONS (renderer/style.css)
+════════════════════════════════════════
+
+/* Charge ring */
+.charge-ring-svg {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%) rotate(-90deg);
+  pointer-events: none;
+}
+.ring-track {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 3;
+}
+.ring-progress {
+  fill: none;
+  stroke: var(--accent, #7F77DD);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--accent, #7F77DD));
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+/* Hold label */
+.hold-label {
+  position: absolute; bottom: -28px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  opacity: 0; transition: opacity 0.3s;
+  white-space: nowrap;
+  animation: soft-pulse 1s ease-in-out infinite;
+}
+@keyframes soft-pulse {
+  0%,100% { opacity: 0.5; } 50% { opacity: 1; }
+}
+
+/* Burst rings */
+.burst-ring {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--accent, #7F77DD);
+  opacity: 0;
+  animation: burst-expand 0.6s ease-out forwards;
+}
+@keyframes burst-expand {
+  0%   { transform:translate(-50%,-50%) scale(1);   opacity:0.8; }
+  100% { transform:translate(-50%,-50%) scale(2.5); opacity:0;   }
+}
+
+/* Listening label */
+.listening-label {
+  position: absolute; bottom: -44px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px; font-weight: 500;
+  letter-spacing: 0px;
+  color: var(--accent, #7F77DD);
+  opacity: 0;
+  transition: opacity 0.3s, letter-spacing 0.4s;
+  white-space: nowrap;
+}
+.listening-label.visible {
+  opacity: 1;
+  letter-spacing: 6px;
+}
+.listening-label.visible::before {
+  content: '● ';
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* Soundwave bars */
+.soundwave-bars {
+  display: flex; gap: 5px; align-items: center;
+  justify-content: center;
+  height: 40px; opacity: 0;
+  transition: opacity 0.3s;
+  margin-top: 8px;
+}
+.soundwave-bars.active { opacity: 1; }
+.bar {
+  width: 4px; height: 8px;
+  background: var(--accent, #7F77DD);
+  border-radius: 3px; opacity: 0.5;
+}
+.soundwave-bars.active .bar {
+  animation: bar-dance 0.8s ease-in-out infinite;
+  opacity: 1;
+}
+@keyframes bar-dance {
+  0%,100% { height: 8px;  opacity:0.5; }
+  50%     { height: 32px; opacity:1;   }
+}
+
+/* Breathing glow (on mic container when active) */
+#mic-container.listening-active {
+  animation: breath-ring 1.5s ease-out infinite;
+}
+@keyframes breath-ring {
+  0%   { box-shadow: 0 0 0 0px  rgba(127,119,221,0.7); }
+  70%  { box-shadow: 0 0 0 18px rgba(127,119,221,0);   }
+  100% { box-shadow: 0 0 0 0px  rgba(127,119,221,0);   }
+}
+
+/* Background overlay glow */
+.listening-overlay {
+  position: fixed; inset: 0; z-index: -1;
+  background: radial-gradient(ellipse at center,
+    rgba(127,119,221,0.12) 0%, transparent 70%);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.listening-overlay.active { opacity: 1; }
+
+/* Floating bg mic */
+.mic-float-bg {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 200px; opacity: 0;
+  pointer-events: none; z-index: -1;
+  filter: grayscale(1) opacity(0.06);
+  transition: opacity 0.4s;
+}
+.mic-float-bg.active {
+  opacity: 1;
+  animation: mic-float 3s ease-in-out infinite;
+}
+@keyframes mic-float {
+  0%,100% { transform:translate(-50%,-50%) rotate(-5deg) scale(1);    }
+  50%     { transform:translate(-50%,-50%) rotate(5deg)  scale(1.04); }
+}
+
+/* Particle orbit */
+.particle-orbit {
+  position: absolute; top:50%; left:50%;
+  width:0; height:0; opacity:0;
+  transition: opacity 0.4s;
+}
+.particle-orbit.active { opacity:1; }
+.particle {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent, #7F77DD);
+  top: -3px; left: -3px;
+  transform-origin: 3px 73px;
+  transform: rotate(calc(var(--i) * 60deg));
+  animation: orbit 4s linear infinite;
+  animation-delay: calc(var(--i) * -0.66s);
+}
+@keyframes orbit {
+  from { transform: rotate(calc(var(--i) * 60deg)); }
+  to   { transform: rotate(calc(var(--i) * 60deg + 360deg)); }
+}
+
+/* Release ripple */
+.release-ripple {
+  position: absolute; top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+  animation: release-expand 0.6s ease-out forwards;
+}
+@keyframes release-expand {
+  0%   { transform:translate(-50%,-50%) scale(0.8); opacity:0.8; }
+  100% { transform:translate(-50%,-50%) scale(2);   opacity:0;   }
+}
+
+════════════════════════════════════════
+ SETTINGS → SHORTCUTS SECTION ADDITIONS
+════════════════════════════════════════
+
+Add to the Shortcuts section in settings panel:
+
+── LONG PRESS TO LISTEN ────────────────
+
+Row 1: Toggle enable/disable
+  Label: "Long Press to Listen"
+  Sub  : "Hold a key to activate voice recognition"
+  Right: Custom toggle switch (id="lp-toggle")
+  Default: ON
+
+Row 2: Charge Duration slider (only visible when ON)
+  Label: "Activation Delay"
+  Sub  : "How long to hold before listening starts"
+  Right: Slider 1s–5s, step 0.5s, default 3s
+         Live label: shows current value e.g. "3.0s"
+
+Row 3: Key binding (only visible when ON)
+  Label: "Hold Key"
+  Sub  : "Key to hold for push-to-talk"
+  Right: Key recorder input field
+         Default shows: "Right Alt"
+         Click → turns blue, shows "Press any key..."
+         User presses key → records e.key + e.code
+         Shows formatted name e.g. "Right Alt", "F2", "Caps Lock"
+         Save button or auto-save on keyup
+
+Row 4: Info note
+  "Hold the key for [X]s → listening starts automatically.
+   Release the key → listening stops immediately."
+  Style: muted info box with ℹ icon
+
+── JavaScript for settings (add to settings.js):
+
+const lpToggle = document.getElementById('lp-toggle');
+const lpKeyField = document.getElementById('lp-key-field');
+const lpDelaySlider = document.getElementById('lp-delay-slider');
+const lpDelayLabel  = document.getElementById('lp-delay-label');
+
+// Load saved values
+const savedLP = JSON.parse(
+  localStorage.getItem('longPress') || '{}');
+const lpEnabled  = savedLP.enabled  ?? true;
+const lpKey      = savedLP.key      ?? 'AltRight';
+const lpKeyLabel = savedLP.keyLabel ?? 'Right Alt';
+const lpDelay    = savedLP.delay    ?? 3000;
+
+lpToggle.checked          = lpEnabled;
+lpKeyField.textContent    = lpKeyLabel;
+lpDelaySlider.value       = lpDelay / 1000;
+lpDelayLabel.textContent  = (lpDelay/1000).toFixed(1) + 's';
+
+// Sync to renderer
+window.holdFeatureEnabled = lpEnabled;
+window.holdKey            = lpKey;
+window.longPressDuration  = lpDelay;
+
+// Events
+lpToggle.addEventListener('change', (e) => {
+  window.holdFeatureEnabled = e.target.checked;
+  localStorage.setItem('longPress', JSON.stringify({
+    ...savedLP, enabled: e.target.checked }));
+  document.getElementById('lp-options').style.display
+    = e.target.checked ? 'block' : 'none';
+});
+
+lpDelaySlider.addEventListener('input', (e) => {
+  const ms = Math.round(e.target.value * 1000);
+  window.longPressDuration = ms;
+  lpDelayLabel.textContent = e.target.value + 's';
+  localStorage.setItem('longPress', JSON.stringify({
+    ...JSON.parse(localStorage.getItem('longPress')||'{}'),
+    delay: ms }));
+});
+
+let recordingKey = false;
+lpKeyField.addEventListener('click', () => {
+  recordingKey = true;
+  lpKeyField.textContent = 'Press any key...';
+  lpKeyField.classList.add('recording');
+});
+document.addEventListener('keydown', (e) => {
+  if (!recordingKey) return;
+  e.preventDefault();
+  recordingKey = false;
+  window.holdKey = e.code;
+  const label = e.key === ' ' ? 'Space' :
+    e.code.replace('Key','').replace('Digit','') || e.key;
+  lpKeyField.textContent = label;
+  lpKeyField.classList.remove('recording');
+  localStorage.setItem('longPress', JSON.stringify({
+    ...JSON.parse(localStorage.getItem('longPress')||'{}'),
+    key: e.code, keyLabel: label }));
+});
+
+════════════════════════════════════════
+ FILES TO MODIFY — SUMMARY
+════════════════════════════════════════
+
+1. renderer/index.html
+   - Add SVG charge ring inside #mic-container
+   - Add hold-label, burst-container, listening-label
+   - Add soundwave-bars (5 x .bar spans)
+   - Add listening-overlay div
+   - Add mic-float-bg div
+   - Add particle-orbit (6 x .particle spans)
+   - In Shortcuts settings section: add Long Press rows
+
+2. renderer/style.css
+   - Add ALL CSS from spec above
+   - Ensure --accent variable used everywhere
+
+3. renderer/renderer.js
+   - Add complete longPress JS logic
+   - keydown/keyup listeners
+   - All animate/activate/deactivate functions
+   - Hold button mouse events
+
+4. renderer/settings.js
+   - Add Long Press settings section JS
+   - Load from localStorage on startup
+   - Sync window.holdKey, window.holdFeatureEnabled,
+     window.longPressDuration on load
+
+════════════════════════════════════════
+ REQUIREMENTS
+════════════════════════════════════════
+
+1. If key released BEFORE 3s, nothing happens — no voice
+2. e.repeat must be checked — held key fires many keydowns,
+   only the FIRST keydown starts the timer
+3. Works for keyboard keys AND the UI Hold button
+4. Feature can be completely disabled from settings
+5. Key binding is fully customizable and persists
+6. Delay is configurable 1s–5s and persists
+7. All animations use CSS only — no animation libraries
+8. Animations must respect prefers-reduced-motion
+9. Release animation always plays even if key was tapped
+   (no voice started) — just the ring reset, no ripple
+10. Generate ALL modified files with complete code.
+    No placeholders. Every function fully implemented.

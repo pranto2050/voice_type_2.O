@@ -166,6 +166,7 @@ function startPythonEngine() {
     // Send initial settings
     sendToPython(`SET_LANG:${store.get('language')}`);
     sendToPython(`SET_CONFIDENCE:${store.get('confidenceThreshold')}`);
+    sendToPython(`SET_AUTO_DETECT:${store.get('autoDetect')}`);
   } catch (err) {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('engine-error', { message: err.message });
@@ -187,7 +188,7 @@ function handlePythonMessage(msg) {
         let textToInject = msg.text;
         
         if (now - lastInjectionTime < 60000 && lastInjectionTime !== 0) {
-          if (!textToInject.startsWith(' ') && !textToInject.match(/^[.,!?;:]/)) {
+          if (!textToInject.startsWith(' ') && !textToInject.match(/^[.,!?;:।]/)) {
             textToInject = ' ' + textToInject;
           }
         }
@@ -204,6 +205,10 @@ function handlePythonMessage(msg) {
       break;
     case 'status':
       mainWindow.webContents.send('engine-status', msg);
+      break;
+    case 'language_switched':
+      store.set('language', msg.language);
+      mainWindow.webContents.send('language-switched', msg);
       break;
     default:
       mainWindow.webContents.send('python-msg', msg);
@@ -450,6 +455,9 @@ function applySettingEffect(key, value) {
       break;
     case 'confidenceThreshold':
       sendToPython(`SET_CONFIDENCE:${value}`);
+      break;
+    case 'autoDetect':
+      sendToPython(`SET_AUTO_DETECT:${value}`);
       break;
     case 'startWithSystem':
       app.setLoginItemSettings({ openAtLogin: value });

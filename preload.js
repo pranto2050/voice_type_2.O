@@ -68,6 +68,10 @@ contextBridge.exposeInMainWorld('voiceAPI', {
     ipcRenderer.on('ptt-state', (_, data) => cb(data));
     return () => ipcRenderer.removeAllListeners('ptt-state');
   },
+  onLanguageSwitched: (cb) => {
+    ipcRenderer.on('language-switched', (_, data) => cb(data));
+    return () => ipcRenderer.removeAllListeners('language-switched');
+  },
 
   platform: process.platform
 });

@@ -12,6 +12,7 @@ import time
 import os
 import struct
 import math
+import langid
 
 
 def emit(obj):
@@ -48,7 +49,19 @@ def emit_amplitude(value):
 class VoiceEngine:
     def __init__(self):
         self.language = "en-US"
+        self.auto_detect = False
         self.confidence_threshold = 0.6
+        self.supported_languages = {
+            'en': 'en-US',
+            'bn': 'bn-BD',
+            'hi': 'hi-IN',
+            'ur': 'ur-PK',
+            'ar': 'ar-SA',
+            'fr': 'fr-FR',
+            'es': 'es-ES',
+            'zh': 'zh-CN',
+            'ja': 'ja-JP'
+        }
         self.running = False
         self.paused = False
         self.recognition_thread = None
@@ -70,13 +83,13 @@ class VoiceEngine:
             self.sr = sr
             self.recognizer = sr.Recognizer()
             # Improved thresholds for better quality and Bengali support
-            self.recognizer.energy_threshold = 400
+            self.recognizer.energy_threshold = 300
             self.recognizer.dynamic_energy_threshold = True
             self.recognizer.dynamic_energy_adjustment_damping = 0.15
             self.recognizer.dynamic_energy_ratio = 1.5
-            self.recognizer.pause_threshold = 1.2  # Increased for more natural speaking
-            self.recognizer.phrase_threshold = 0.15 # Even more sensitive to start
-            self.recognizer.non_speaking_duration = 0.8
+            self.recognizer.pause_threshold = 2.0  # Increased to allow longer natural pauses
+            self.recognizer.phrase_threshold = 0.3 # Less sensitive to start to avoid small noises
+            self.recognizer.non_speaking_duration = 1.0 # Increased for smoother transition
             emit_status("Google Speech API engine ready")
         except ImportError:
             emit_error("speech_recognition not installed. Run: pip install SpeechRecognition")
@@ -109,6 +122,11 @@ class VoiceEngine:
         self.language = lang_code
         emit_status(f"Language set to {lang_code}")
 
+    def set_auto_detect(self, enabled):
+        """Update the auto-detection setting."""
+        self.auto_detect = (enabled.lower() == 'true')
+        emit_status(f"Auto-detect language: {self.auto_detect}")
+
     def set_confidence(self, threshold):
         """Update the confidence threshold."""
         try:
@@ -116,6 +134,23 @@ class VoiceEngine:
             emit_status(f"Confidence threshold set to {threshold}")
         except ValueError:
             pass
+
+    def _detect_and_switch_language(self, text):
+        """Detect language of text and switch if necessary."""
+        if not text or not self.auto_detect:
+            return self.language
+
+        lang, confidence = langid.classify(text)
+        
+        # If we found a supported language
+        if lang in self.supported_languages:
+            new_lang = self.supported_languages[lang]
+            if new_lang != self.language:
+                self.language = new_lang
+                emit({"type": "language_switched", "language": new_lang})
+                emit_status(f"Auto-switched language to {new_lang}")
+        
+        return self.language
 
     def start(self):
         """Start recognition and amplitude threads."""
@@ -214,7 +249,8 @@ class VoiceEngine:
                     continue
 
                 try:
-                    audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=30)
+                    # Removed timeout and phrase_time_limit to allow truly continuous listening
+                    audio = self.recognizer.listen(source, timeout=None, phrase_time_limit=None)
 
                     if not self.running or self.paused:
                         continue
@@ -231,10 +267,18 @@ class VoiceEngine:
                         if result and isinstance(result, dict):
                             alternatives = result.get("alternative", [])
                             if alternatives:
+                                # Get the most comprehensive result
+                                # Google sometimes provides multiple alternatives, the first is usually best
+                                # but we want to make sure we don't miss parts of the speech
                                 best = alternatives[0]
                                 text = best.get("transcript", "").strip()
-                                confidence = best.get("confidence", 0.9)
-                                if text and confidence >= self.confidence_threshold:
+                                confidence = best.get("confidence", 0.1) # Lowered threshold to accept more speech
+                                
+                                if text and confidence >= (self.confidence_threshold - 0.2):
+                                    # Handle auto-detection
+                                    if self.auto_detect:
+                                        self._detect_and_switch_language(text)
+                                    
                                     emit_transcript(text, final=True, lang=self.language, confidence=confidence)
                                     recognized = True
 
@@ -249,18 +293,25 @@ class VoiceEngine:
                             recognized = True
 
                     except sr.UnknownValueError:
-                        pass  # Nothing recognized
-                    except sr.RequestError:
-                        # Google API unavailable — try Vosk offline fallback
+                        # Nothing recognized, don't emit anything but continue listening
+                        pass
+                    except sr.RequestError as e:
+                        # Google API error — try Vosk offline fallback if available
                         if self.use_vosk_available and not recognized:
                             self._try_vosk(audio)
+                        else:
+                            emit_error(f"Google API Request Error: {e}")
+                    except Exception as e:
+                        # Catch other potential errors in recognition processing
+                        emit_error(f"Process Error: {e}")
 
                 except sr.WaitTimeoutError:
-                    pass  # No speech detected in timeout window
+                    # This shouldn't happen with timeout=None, but added for safety
+                    pass
                 except Exception as e:
                     if self.running:
-                        emit_error(f"Recognition error: {e}")
-                    time.sleep(0.5)
+                        emit_error(f"Loop error: {e}")
+                    time.sleep(0.1) # Small sleep to avoid CPU spike on repeated errors
 
     def _try_vosk(self, audio_data):
         """Attempt offline recognition with Vosk."""
@@ -309,6 +360,10 @@ def stdin_reader(engine):
             lang = line[9:].strip()
             if lang:
                 engine.set_language(lang)
+        elif line.startswith("SET_AUTO_DETECT:"):
+            enabled = line[16:].strip()
+            if enabled:
+                engine.set_auto_detect(enabled)
         elif line.startswith("SET_CONFIDENCE:"):
             conf = line[15:].strip()
             if conf:

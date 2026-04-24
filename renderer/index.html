@@ -399,10 +399,10 @@
       <!-- ── Language ──────────────────────────────────────────── -->
       <section class="settings-section" id="section-language" role="tabpanel" aria-labelledby="tab-language">
         <div class="settings-group">
-          <div class="settings-group-title">Detection</div>
-          <div class="settings-row premium-row">
+          <div class="settings-group-title">Auto-detect Language</div>
+          <div class="settings-card">
             <div class="settings-row-info">
-              <div class="settings-row-label">Auto-detect Language</div>
+              <div class="settings-row-label">Enable Auto-detection</div>
               <div class="settings-row-desc">Automatically identify the spoken language</div>
             </div>
             <label class="toggle" aria-label="Toggle auto-detect language">
@@ -412,7 +412,7 @@
           </div>
         </div>
 
-        <div class="settings-group">
+        <div class="settings-group" id="manual-language-selection">
           <div class="settings-group-title">Available Languages</div>
           <div class="lang-grid" role="radiogroup" aria-label="Select language">
             <div class="lang-card active" data-lang="en-US" role="radio" aria-checked="true" tabindex="0">
