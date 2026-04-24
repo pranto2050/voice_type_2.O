@@ -1050,12 +1050,35 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  padding: 6px 10px;
+  border-radius: 100px;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.mini-mic-section:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.mini-mic-section.active {
   color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.mini-mic-section.paused {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .mini-mic-icon {
   width: 18px;
   height: 18px;
+  filter: drop-shadow(0 0 2px currentColor);
 }
 
 .mini-wave-container {

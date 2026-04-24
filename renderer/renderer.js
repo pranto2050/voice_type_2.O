@@ -156,6 +156,14 @@ class VoiceTypeApp {
       });
     }
 
+    const miniMicSection = document.querySelector('.mini-mic-section');
+    if (miniMicSection) {
+      miniMicSection.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._toggleListening();
+      });
+    }
+
     // Onboarding
     const onboardingBtn = document.getElementById('onboarding-permit-btn');
     if (onboardingBtn) {
@@ -325,6 +333,7 @@ class VoiceTypeApp {
     const statusDot = document.getElementById('status-dot');
     const statusState = document.getElementById('status-state');
     const appEl = document.getElementById('app');
+    const miniMic = document.querySelector('.mini-mic-section');
 
     if (!micBtn) return;
 
@@ -332,6 +341,7 @@ class VoiceTypeApp {
     micContainer.classList.remove('listening');
     statusDot.classList.remove('active', 'paused', 'error');
     if (appEl) appEl.classList.remove('listening');
+    if (miniMic) miniMic.classList.remove('active', 'paused');
 
     if (this.isPaused) {
       micBtn.classList.add('paused');
@@ -339,6 +349,7 @@ class VoiceTypeApp {
       statusDot.classList.add('paused');
       statusState.textContent = 'Paused';
       statusPill.classList.remove('listening');
+      if (miniMic) miniMic.classList.add('paused');
     } else if (this.isListening) {
       micBtn.classList.add('active');
       micContainer.classList.add('listening');
@@ -347,6 +358,7 @@ class VoiceTypeApp {
       statusState.textContent = 'Listening';
       statusPill.classList.add('listening');
       if (appEl) appEl.classList.add('listening');
+      if (miniMic) miniMic.classList.add('active');
     } else {
       micLabel.textContent = 'Tap to speak';
       statusState.textContent = 'Idle';
