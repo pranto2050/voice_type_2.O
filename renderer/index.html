@@ -9,6 +9,15 @@
 </head>
 <body>
 <div id="app" role="main" aria-label="VoiceType Pro application">
+    <!-- ── Floating Mic Overlay (Background) ── -->
+    <div id="floating-mic-overlay" class="floating-mic-overlay" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="8" y1="22" x2="16" y2="22"/>
+      </svg>
+    </div>
 
   <!-- ─── Custom Title Bar ────────────────────────────────────── -->
   <div id="title-bar" role="toolbar" aria-label="Window controls">
@@ -60,6 +69,25 @@
     <div id="mic-container">
       <div class="mic-ring mic-ring-1" aria-hidden="true"></div>
       <div class="mic-ring mic-ring-2" aria-hidden="true"></div>
+      
+      <!-- Charge Ring SVG -->
+      <svg class="charge-ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+        <circle id="charge-ring" cx="60" cy="60" r="52" fill="none" stroke-width="3" />
+      </svg>
+
+      <!-- Ripple Rings -->
+      <div class="ripple-rings" aria-hidden="true">
+        <div class="ripple-ring"></div>
+        <div class="ripple-ring"></div>
+        <div class="ripple-ring"></div>
+      </div>
+
+      <!-- Particle Dots -->
+      <div class="particle-dots" aria-hidden="true">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+
       <button id="mic-btn" aria-label="Start voice recognition" aria-pressed="false">
         <svg id="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -73,7 +101,20 @@
         </svg>
       </button>
     </div>
-    <span id="mic-label" aria-live="polite">Tap to speak</span>
+    <div class="mic-labels">
+      <span id="mic-label" aria-live="polite">Tap to speak</span>
+      <span id="hold-to-activate" class="hold-label hidden">Hold to activate...</span>
+      <span id="listening-label" class="listening-label hidden">LISTENING</span>
+    </div>
+
+    <!-- Soundwave Bars -->
+    <div id="soundwave-bars" class="soundwave-bars hidden" aria-hidden="true">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
   </section>
 
   <!-- ─── Waveform ─────────────────────────────────────────────── -->
@@ -361,6 +402,47 @@
             </div>
             <div class="shortcut-field">
               <div class="shortcut-display" id="pause-key-display" tabindex="0" role="button" aria-label="Click to record pause key">Space</div>
+            </div>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="settings-card">
+            <div class="settings-row-info">
+              <div class="settings-row-label">Long Press to Listen</div>
+              <div class="settings-row-desc">Hold a key to auto-activate voice recognition</div>
+            </div>
+            <label class="toggle" aria-label="Toggle long press feature">
+              <input type="checkbox" id="toggle-long-press">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div id="long-press-options">
+            <div class="settings-row range-row">
+              <div class="range-header">
+                <span class="settings-row-label">Activation Delay</span>
+                <span class="range-value" id="long-press-delay-value">3.0s</span>
+              </div>
+              <input type="range" id="long-press-delay-slider" min="1" max="5" step="0.5" value="3" aria-label="Long press activation delay">
+            </div>
+
+            <div class="shortcut-card" id="long-press-key-row">
+              <div class="shortcut-info">
+                <div class="settings-row-label">Hold Key</div>
+                <div class="settings-row-desc">The key to hold for push-to-talk</div>
+              </div>
+              <div class="shortcut-field">
+                <div class="shortcut-display" id="long-press-key-display" tabindex="0" role="button" aria-label="Click to record long press key">AltRight</div>
+              </div>
+            </div>
+
+            <div class="settings-info-box">
+              <div class="info-icon">ℹ</div>
+              <div class="info-text">
+                Hold the key for <span id="info-delay-val">3.0</span>s → listening starts automatically.<br>
+                Release the key → listening stops immediately.
+              </div>
             </div>
           </div>
         </div>

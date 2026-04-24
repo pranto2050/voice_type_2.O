@@ -16,6 +16,13 @@ class VoiceTypeApp {
     this.isMiniMode = false;
     this.isPTTMode = false;
 
+    // Long Press to Listen State
+    this.longPressTimer = null;
+    this.longPressActive = false;
+    this.chargeStart = null;
+    this.chargeAnimFrame = null;
+    this.RING_CIRCUMFERENCE = 326.7; // 2 * Math.PI * 52
+
     this._init();
   }
 
@@ -602,6 +609,23 @@ class VoiceTypeApp {
     // Prevent shortcut recording from triggering app shortcuts
     if (this.settings && this.settings.recordingShortcut) return;
 
+    // --- Long Press to Listen Logic ---
+    const longPressEnabled = this.settings?.settings?.longPressEnabled ?? true;
+    const longPressKey = this.settings?.settings?.longPressKey || 'AltRight';
+    
+    // Check if the pressed key matches the long press key
+    const isLongPressKey = (e.code === longPressKey || e.key === longPressKey);
+
+    if (longPressEnabled && isLongPressKey && !this.longPressActive && !e.repeat && !this._isInputFocused()) {
+      this.chargeStart = Date.now();
+      this._startChargeAnimation();
+
+      this.longPressTimer = setTimeout(() => {
+        this._activateLongPressListening();
+      }, 3000); // 3 seconds threshold
+      return;
+    }
+
     // Custom pause key when listening (outside of inputs)
     const pauseKey = (this.settings && this.settings.settings && this.settings.settings.pauseKey) || 'Space';
     const isPauseKey = pauseKey === 'Space' ? e.key === ' ' : e.key.toLowerCase() === pauseKey.toLowerCase();
@@ -615,11 +639,111 @@ class VoiceTypeApp {
   _handleKeyUp(e) {
     if (this.settings && this.settings.recordingShortcut) return;
     
+    // --- Long Press to Listen Logic ---
+    const longPressKey = this.settings?.settings?.longPressKey || 'AltRight';
+    const isLongPressKey = (e.code === longPressKey || e.key === longPressKey);
+
+    if (isLongPressKey) {
+      clearTimeout(this.longPressTimer);
+      cancelAnimationFrame(this.chargeAnimFrame);
+      this._resetChargeRing();
+
+      if (this.longPressActive) {
+        this._deactivateLongPressListening();
+      }
+    }
+
     const pauseKey = (this.settings && this.settings.settings && this.settings.settings.pauseKey) || 'Space';
     const isPauseKey = pauseKey === 'Space' ? e.key === ' ' : e.key.toLowerCase() === pauseKey.toLowerCase();
 
     if (isPauseKey && this.isPaused && !this._isInputFocused()) {
       this._resume();
+    }
+  }
+
+  /* ── Long Press Animations & Logic ───────────────── */
+
+  _startChargeAnimation() {
+    const chargeRing = document.getElementById('charge-ring');
+    const holdLabel = document.getElementById('hold-to-activate');
+    if (holdLabel) holdLabel.classList.remove('hidden');
+
+    const animate = () => {
+      const elapsed = Date.now() - this.chargeStart;
+      const progress = Math.min(elapsed / 3000, 1);
+      const offset = this.RING_CIRCUMFERENCE * (1 - progress);
+
+      if (chargeRing) {
+        chargeRing.style.strokeDashoffset = offset;
+      }
+
+      if (progress < 1) {
+        this.chargeAnimFrame = requestAnimationFrame(animate);
+      }
+    };
+    this.chargeAnimFrame = requestAnimationFrame(animate);
+  }
+
+  _resetChargeRing() {
+    const chargeRing = document.getElementById('charge-ring');
+    const holdLabel = document.getElementById('hold-to-activate');
+    if (chargeRing) chargeRing.style.strokeDashoffset = this.RING_CIRCUMFERENCE;
+    if (holdLabel) holdLabel.classList.add('hidden');
+  }
+
+  _activateLongPressListening() {
+    this.longPressActive = true;
+    
+    // UI Phase 2: Activation Burst
+    const micContainer = document.getElementById('mic-container');
+    const rippleRings = micContainer?.querySelector('.ripple-rings');
+    const listeningLabel = document.getElementById('listening-label');
+    const holdLabel = document.getElementById('hold-to-activate');
+    const appEl = document.getElementById('app');
+    const floatingMic = document.getElementById('floating-mic-overlay');
+    const particleDots = micContainer?.querySelector('.particle-dots');
+    const soundwaveBars = document.getElementById('soundwave-bars');
+
+    if (rippleRings) rippleRings.classList.add('ripple-burst');
+    if (listeningLabel) listeningLabel.classList.remove('hidden');
+    if (holdLabel) holdLabel.classList.add('hidden');
+    if (appEl) appEl.classList.add('long-press-active');
+    if (floatingMic) floatingMic.classList.add('active');
+    if (particleDots) particleDots.classList.add('active');
+    if (soundwaveBars) soundwaveBars.classList.remove('hidden');
+    
+    // Breathing glow
+    micContainer?.classList.add('breathing-glow');
+
+    // Start recognition
+    if (!this.isListening) {
+      this._startListening();
+    }
+  }
+
+  _deactivateLongPressListening() {
+    this.longPressActive = false;
+    
+    const micContainer = document.getElementById('mic-container');
+    const rippleRings = micContainer?.querySelector('.ripple-rings');
+    const listeningLabel = document.getElementById('listening-label');
+    const appEl = document.getElementById('app');
+    const floatingMic = document.getElementById('floating-mic-overlay');
+    const particleDots = micContainer?.querySelector('.particle-dots');
+    const soundwaveBars = document.getElementById('soundwave-bars');
+
+    if (rippleRings) rippleRings.classList.remove('ripple-burst');
+    if (listeningLabel) listeningLabel.classList.add('hidden');
+    if (appEl) appEl.classList.remove('long-press-active');
+    if (floatingMic) floatingMic.classList.remove('active');
+    if (particleDots) particleDots.classList.remove('active');
+    if (soundwaveBars) soundwaveBars.classList.add('hidden');
+    
+    micContainer?.classList.remove('breathing-glow');
+
+    // Stop recognition
+    if (this.isListening) {
+      this._stopListening();
     }
   }
 

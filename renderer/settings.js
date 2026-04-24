@@ -146,6 +146,23 @@ class SettingsManager {
 
     const pttDisplay = document.getElementById('ptt-shortcut-display');
     if (pttDisplay) pttDisplay.textContent = this.settings.pttShortcut || 'Ctrl+Alt+S';
+
+    // Long Press to Listen
+    const lpToggle = document.getElementById('toggle-long-press');
+    const lpOptions = document.getElementById('long-press-options');
+    const lpDelaySlider = document.getElementById('long-press-delay-slider');
+    const lpDelayValue = document.getElementById('long-press-delay-value');
+    const lpInfoDelay = document.getElementById('info-delay-val');
+    const lpKeyDisplay = document.getElementById('long-press-key-display');
+
+    if (lpToggle) lpToggle.checked = this.settings.longPressEnabled ?? true;
+    if (lpOptions) lpOptions.style.display = (this.settings.longPressEnabled ?? true) ? 'block' : 'none';
+    
+    const delay = this.settings.longPressDelay || 3000;
+    if (lpDelaySlider) lpDelaySlider.value = delay / 1000;
+    if (lpDelayValue) lpDelayValue.textContent = (delay / 1000).toFixed(1) + 's';
+    if (lpInfoDelay) lpInfoDelay.textContent = (delay / 1000).toFixed(1);
+    if (lpKeyDisplay) lpKeyDisplay.textContent = this.settings.longPressKey || 'AltRight';
   }
 
   _applyLanguage() {
@@ -385,6 +402,36 @@ class SettingsManager {
     if (pauseKeyDisplay) {
       pauseKeyDisplay.addEventListener('click', () => {
         this._startRecordingShortcut('pause-key-display', 'pauseKey');
+      });
+    }
+
+    // Long Press to Listen
+    const lpToggle = document.getElementById('toggle-long-press');
+    if (lpToggle) {
+      lpToggle.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        this._save('longPressEnabled', enabled);
+        const lpOptions = document.getElementById('long-press-options');
+        if (lpOptions) lpOptions.style.display = enabled ? 'block' : 'none';
+      });
+    }
+
+    const lpDelaySlider = document.getElementById('long-press-delay-slider');
+    if (lpDelaySlider) {
+      lpDelaySlider.addEventListener('input', (e) => {
+        const ms = Math.round(parseFloat(e.target.value) * 1000);
+        this._save('longPressDelay', ms);
+        const lpDelayValue = document.getElementById('long-press-delay-value');
+        if (lpDelayValue) lpDelayValue.textContent = parseFloat(e.target.value).toFixed(1) + 's';
+        const lpInfoDelay = document.getElementById('info-delay-val');
+        if (lpInfoDelay) lpInfoDelay.textContent = parseFloat(e.target.value).toFixed(1);
+      });
+    }
+
+    const lpKeyDisplay = document.getElementById('long-press-key-display');
+    if (lpKeyDisplay) {
+      lpKeyDisplay.addEventListener('click', () => {
+        this._startRecordingShortcut('long-press-key-display', 'longPressKey');
       });
     }
 

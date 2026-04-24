@@ -218,16 +218,227 @@ html, body {
   align-items: center;
   padding: 28px 24px 16px;
   gap: 8px;
+  position: relative;
 }
 
 #mic-container {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+/* Charge Ring SVG */
+.charge-ring-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  z-index: 3;
+}
+
+#charge-ring {
+  stroke: var(--accent);
+  stroke-dasharray: 326.7;
+  stroke-dashoffset: 326.7;
+  transition: stroke-dashoffset 0.1s linear;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+/* Ripple Burst */
+.ripple-rings {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ripple-ring {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(1);
+}
+
+.ripple-burst .ripple-ring {
+  animation: ripple-out 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+.ripple-burst .ripple-ring:nth-child(2) { animation-delay: 0.1s; }
+.ripple-burst .ripple-ring:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes ripple-out {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Breathing Glow Ring */
+.breathing-glow {
+  animation: breath-ring 1.5s infinite;
+}
+
+@keyframes breath-ring {
+  0%   { box-shadow: 0 0 0 0px rgba(var(--accent-rgb, 0, 180, 216), 0.7); }
+  70%  { box-shadow: 0 0 0 18px rgba(var(--accent-rgb, 0, 180, 216), 0); }
+  100% { box-shadow: 0 0 0 0px rgba(var(--accent-rgb, 0, 180, 216), 0); }
+}
+
+/* Particle Dots */
+.particle-dots {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.particle-dots.active {
+  opacity: 1;
+  animation: rotate-particles 4s linear infinite;
+}
+
+.particle-dots .dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  margin-left: -3px;
+  margin-top: -3px;
+}
+
+/* Position dots in orbit */
+.particle-dots .dot:nth-child(1) { transform: rotate(0deg) translateY(-70px); }
+.particle-dots .dot:nth-child(2) { transform: rotate(60deg) translateY(-70px); }
+.particle-dots .dot:nth-child(3) { transform: rotate(120deg) translateY(-70px); }
+.particle-dots .dot:nth-child(4) { transform: rotate(180deg) translateY(-70px); }
+.particle-dots .dot:nth-child(5) { transform: rotate(240deg) translateY(-70px); }
+.particle-dots .dot:nth-child(6) { transform: rotate(300deg) translateY(-70px); }
+
+@keyframes rotate-particles {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Soundwave Bars */
+.soundwave-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  margin-top: 10px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.soundwave-bars.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.soundwave-bars .bar {
+  width: 4px;
+  height: 8px;
+  background: var(--accent);
+  opacity: 0.8;
+  border-radius: 3px;
+  animation: bar-dance 1s infinite ease-in-out;
+}
+
+.soundwave-bars .bar:nth-child(1) { animation-delay: 0s; }
+.soundwave-bars .bar:nth-child(2) { animation-delay: 0.15s; }
+.soundwave-bars .bar:nth-child(3) { animation-delay: 0.075s; }
+.soundwave-bars .bar:nth-child(4) { animation-delay: 0.225s; }
+.soundwave-bars .bar:nth-child(5) { animation-delay: 0.1s; }
+
+@keyframes bar-dance {
+  0%, 100% { height: 8px; opacity: 0.5; }
+  50% { height: 32px; opacity: 1; }
+}
+
+/* Mic Labels */
+.mic-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 20px;
+}
+
+.hold-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  animation: soft-pulse 1s infinite ease-in-out;
+}
+
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.listening-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0px;
+  animation: letter-spacing-in 0.4s forwards;
+}
+
+@keyframes letter-spacing-in {
+  from { letter-spacing: 0px; }
+  to { letter-spacing: 6px; }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Floating Mic Overlay */
+.floating-mic-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  color: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.5s ease;
+}
+
+.floating-mic-overlay.active {
+  opacity: 0.08;
+  animation: mic-float 3s ease-in-out infinite;
+}
+
+@keyframes mic-float {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
+  50% { transform: translate(-50%, -50%) rotate(5deg) scale(1.04); }
+}
+
+/* Background Glow */
+#app.long-press-active {
+  background: radial-gradient(ellipse at center, rgba(var(--accent-rgb, 127, 119, 221), 0.12) 0%, var(--bg-primary) 70%);
 }
 
 .mic-ring {
@@ -282,6 +493,7 @@ html, body {
   background: var(--accent-dim);
   border-color: var(--accent);
   box-shadow: 0 0 24px var(--accent-glow);
+  transform: scale(1.1);
 }
 
 #mic-btn.paused {
